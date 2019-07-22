@@ -1,9 +1,16 @@
 ---
 title: "Decision Tree Assignment"
-author: "Scott Stoltzman"
+author: "Scott Stoltzman...Finalized by Francesco!"
 date: "7/17/2019"
-output: html_document
+output: html_document 
 ---
+
+```{r}
+install.packages('tidyverse')
+install.packages('caret')
+install.packages('GGally')
+install.packages('rpart.plot')
+```
 
 ```{r setup, include=FALSE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -15,6 +22,13 @@ set.seed(123)
 ```
 
 ## Data
+
+```{r}
+mpg
+```
+
+#FB: Combining mpg data and dropping columns
+
 ```{r}
 raw_dat = as.data.frame(mpg) %>%
   mutate(mpg = (cty + hwy)/2) %>%
@@ -22,6 +36,7 @@ raw_dat = as.data.frame(mpg) %>%
 head(raw_dat)
 ```
 
+# Scott's "bucket list!"
 
 ## Group your mpg into "high, medium, low" where mpg:
 high = >90%
@@ -32,39 +47,100 @@ low = <30%
 ```{r}
 mpg_buckets = quantile(raw_dat$mpg)
 
+mpg_buckets
 dat = raw_dat %>%
   mutate(mpg = if_else(mpg < mpg_buckets[2],
                           "low",
                           if_else(mpg > mpg_buckets[4],
                                   "high",
                                   "medium")))
+
 ```
 
+```{r}
+head(raw_dat)
+```
+
+
+
+```{r}
+mpg_buckets = quantile(raw_dat$mpg)
+
+
+dat = raw_dat %>%
+  mutate(mpg = if_else(mpg < mpg_buckets[2],
+                          "low",
+                          if_else(mpg > mpg_buckets[4],
+                                  "high",
+                                  "medium")))
+head(dat)
+```
+
+## Randomly sample 1% of your data to visualize and plot using ggpairs
+```{r, message=FALSE, warning=FALSE}
+dat %>% 
+  sample_n(0.01 * nrow(dat)) %>%
+  GGally::ggpairs()
+```
+#FB: Anything stick out????
 
 ## Split data to test / train
 Use 85% of the data for training 
 ```{r}
-training_split = YOU_FINISH_THIS
-smp_size = YOU_FINISH_THIS
-dat_index = YOU_FINISH_THIS
-dat_train = YOU_FINISH_THIS
-dat_test = YOU_FINISH_THIS
+training_split = 0.85
+#smp_size = YOU_FINISH_THIS
+#dat_index = YOU_FINISH_THIS
+#dat_train = YOU_FINISH_THIS
+#dat_test = YOU_FINISH_THIS
+
+smp_size = floor(training_split * nrow(dat))
+dat_index = sample(seq_len(nrow(dat)), size = smp_size)
+dat_train = dat[dat_index,]
+dat_test = dat[-dat_index,]
+```
+
+```{r}
+head(dat_train)
+```
+
+```{r}
+head(dat_test)
+```
+
+```{r}
+install.packages ("e1071")
+library("e1071")
 ```
 
 
 ## Create a decision tree using `caret::train` and the algorithm `rpart`
 ```{r}
-tctrl = YOU_FINISH_THIS
+#tctrl = YOU_FINISH_THIS
 
-mod_dt = YOU_FINISH_THIS
+#mod_dt = YOU_FINISH_THIS
 
-pred_dt = YOU_FINISH_THIS
+#pred_dt = YOU_FINISH_THIS
+#
+tctrl = trainControl(method = 'cv',
+                     number = 10,
+                     savePredictions = TRUE,
+                     classProbs = TRUE)
+
+mod_dt = train(dat_train %>% select(-mpg), 
+                dat_train$mpg,
+               
+                method = 'rpart',
+                parms = list(split = "information"),
+                trControl=tctrl)
+
+pred_dt = predict(mod_dt, dat_test, type = 'prob')
 ```
 
 ## Visualize your tree
 Use the `prp` function
 ```{r}
-prp(YOU_FINISH_THIS)
+#prp(YOU_FINISH_THIS)
+prp(mod_dt$finalModel, box.palette = "auto")
 ```
 
 
@@ -81,7 +157,8 @@ new_car = data.frame(
   fl = 'p',
   class = 'compact'
 )
-predict(YOU_FINISH_THIS)
+#predict(YOU_FINISH_THIS)
+predict(mod_dt, new_car)
 ```
 
 
@@ -91,3 +168,29 @@ Describe your results.
 Show the model parameters, confusion matrix, etc.
 Explain why you chose to use the parameters you did for this decision tree model.
 
+#FB:  The Audi does follow the decision tree to "medium" mpg terminal leaf node.  I checked and it's not in the dat table.  There is not 2000 year A4...but, there is a 1999 with a 4 cyl engine 1.8 turbo, and a 1999 with 4 cyl 2.8 non-turbo engine.  The mileage of these models ranges between 18/29 and 16/26 city/hwy mpg. These fit the "medium" mpg range.
+
+#FB: Looking at the correlation graphics... I don't see any clenar 1:1 correlations worth going deeper into. Two that I can't explain are the cyl/cyl and disp/disp graphs which look like inverted normal distributions.
+
+FB: The prp function picked the varibles.
+
+As for the parameters for the model:
+
+trainControl
+  - method = 'cv' ... means use cross validation resampling method
+  - number = 10 ... means the data is broken into 10 folds for cv
+  - savePredictions = TRUE ... means to save the observed and predictions is a easy to read format using model$pred to view.
+  - classProbs = TRUE ... means the class probabilities should be computed for held-out samples during resample.
+
+train
+  - method = 'rpart' ... means recursive partioning
+  - parms = list(split = "information")... means use the information gain ("look-ahead") algorithm - instead of the default gini impurity method. 
+  - trControl=tctrl) ... means use this list of values that define how this function acts. It's the output of the train function.
+  
+  
+predict
+  - mod_dt ... is the name of the model used to predict
+  - at_test ... 
+  - type = 'prob' .. for a classification tree it's a matrix of class probabilities.
+  
+  
