@@ -5,12 +5,13 @@ date: "7/17/2019"
 output: html_document 
 ---
 
-```{r}
+#```{r}
 install.packages('tidyverse')
 install.packages('caret')
 install.packages('GGally')
 install.packages('rpart.plot')
-```
+install.packages ("e1071")
+#```
 
 ```{r setup, include=FALSE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -108,7 +109,6 @@ head(dat_test)
 ```
 
 ```{r}
-install.packages ("e1071")
 library("e1071")
 ```
 
